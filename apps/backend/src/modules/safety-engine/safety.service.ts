@@ -1,4 +1,5 @@
 import { VectorService } from '../semantic-search/vector.service';
+import { GroqService } from '../../core/groq.service';
 
 export interface PatientProfile {
   complaint: string;
@@ -15,6 +16,30 @@ export class SafetyService {
     const queryText = `${patient.complaint} ${patient.additional_symptoms || ''}`;
     const patientEmbedding = await VectorService.generateEmbedding(queryText);
     const results: any[] = [];
+
+    let groqAnalysis: { analysis: string; recommendedMedicines: string[]; warnings: string[]; explanation: string } | null = null;
+
+    if (GroqService.isAvailable()) {
+      try {
+        groqAnalysis = await GroqService.analyzeSymptoms(
+          patient.complaint,
+          patient.age,
+          patient.gender,
+          patient.additional_symptoms || '',
+          patient.known_allergies,
+          medicines
+            .filter((m: any) => m.ai_knowledge)
+            .map((m: any) => ({
+              name: m.name,
+              genericName: m.generic_name,
+              category: m.ai_knowledge.therapeutic_category,
+              isOtc: m.ai_knowledge.is_otc,
+            }))
+        );
+      } catch {
+        groqAnalysis = null;
+      }
+    }
 
     for (const med of medicines) {
       if (!med.ai_knowledge) continue;
@@ -42,6 +67,15 @@ export class SafetyService {
         warnings.push('CRITICAL: Contraindicated during pregnancy.');
       }
 
+      if (groqAnalysis) {
+        if (groqAnalysis.warnings.some((w: string) => med.name.toLowerCase().includes(w.toLowerCase().split(' ')[0]?.toLowerCase() || ''))) {
+          isSafe = false;
+        }
+        if (!groqAnalysis.recommendedMedicines.includes(med.name)) {
+          matchScore = Math.max(10, matchScore - 20);
+        }
+      }
+
       matchScore = isSafe ? matchScore : Math.max(10, matchScore - 40);
 
       results.push({
@@ -51,6 +85,7 @@ export class SafetyService {
         match_score: matchScore,
         is_safe: isSafe,
         warnings,
+        groq_analysis: groqAnalysis ? { analysis: groqAnalysis.analysis, explanation: groqAnalysis.explanation } : null,
         details: {
           therapeutic_category: knowledge.therapeutic_category,
           adult_dosage: knowledge.adult_dosage,

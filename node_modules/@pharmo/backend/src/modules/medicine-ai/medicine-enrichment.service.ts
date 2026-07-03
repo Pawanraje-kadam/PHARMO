@@ -1,5 +1,6 @@
 import { prisma } from '../../core/database';
 import { VectorService } from '../semantic-search/vector.service';
+import { GroqService } from '../../core/groq.service';
 
 export class MedicineEnrichmentService {
   public static async enrich(medicineId: string): Promise<void> {
@@ -10,22 +11,31 @@ export class MedicineEnrichmentService {
       const searchProfileText = `Medicine: ${medicine.name}. Generic: ${medicine.generic_name || ''}.`;
       const embedding = await VectorService.generateEmbedding(searchProfileText);
 
-      // Automated clinical information discovery mock mapping
-      const clinicalSpecs = {
-        generic_ingredient: medicine.generic_name || medicine.name,
-        therapeutic_category: 'Analgesics / Antipyretics',
-        drug_class: 'NSAID',
-        common_uses: ['Fever', 'Pain', 'Headache'],
-        adult_dosage: '500mg-1000mg every 4-6 hours.',
-        is_otc: true,
-        contraindications: ['Severe liver impairment'],
-        common_side_effects: ['Nausea'],
-        pregnancy_warnings: 'Consult healthcare provider before use.',
-        breastfeeding_warnings: 'Compatible with short term use.',
-        important_warnings: 'Do not take with other paracetamol products.',
-        search_keywords: ['fever', 'headache', 'body pain'],
-        synonyms: [medicine.name.toLowerCase()]
-      };
+      let clinicalSpecs: any;
+
+      if (GroqService.isAvailable()) {
+        clinicalSpecs = await GroqService.generateClinicalInfo(medicine.name, medicine.generic_name);
+      } else {
+        clinicalSpecs = {
+          generic_ingredient: medicine.generic_name || medicine.name,
+          therapeutic_category: 'Analgesics / Antipyretics',
+          drug_class: 'NSAID',
+          common_uses: ['Fever', 'Pain', 'Headache'],
+          age_restrictions: null,
+          adult_dosage: '500mg-1000mg every 4-6 hours.',
+          pediatric_dosage: null,
+          is_otc: true,
+          contraindications: ['Severe liver impairment'],
+          common_side_effects: ['Nausea'],
+          pregnancy_warnings: 'Consult healthcare provider before use.',
+          breastfeeding_warnings: 'Compatible with short term use.',
+          food_instructions: null,
+          storage_conditions: null,
+          important_warnings: 'Do not take with other paracetamol products.',
+          search_keywords: ['fever', 'headache', 'body pain'],
+          synonyms: [medicine.name.toLowerCase()]
+        };
+      }
 
       await prisma.medicineKnowledge.upsert({
         where: { medicine_id: medicineId },

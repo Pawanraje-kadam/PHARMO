@@ -8,4 +8,5 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   jwtSecret: process.env.JWT_SECRET || 'super-secret-pharmo-key-change-in-prod',
   databaseUrl: process.env.DATABASE_URL,
+  groqApiKey: process.env.GROQ_API_KEY || '',
 };
