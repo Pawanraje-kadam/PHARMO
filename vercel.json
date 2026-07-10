@@ -1,7 +1,6 @@
 {
-  "rootDirectory": "apps/frontend",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "buildCommand": "npm run build --workspace=apps/frontend",
+  "outputDirectory": "apps/frontend/dist",
   "framework": "vite",
-  "devCommand": "npm run dev"
+  "devCommand": "npm run dev --workspace=apps/frontend"
 }
