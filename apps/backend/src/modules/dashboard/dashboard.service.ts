@@ -1,4 +1,4 @@
-import { prisma } from '../../core/database';
+import { prisma } from '../../core/database.js';
 
 export class DashboardService {
   public static async getSummary() {

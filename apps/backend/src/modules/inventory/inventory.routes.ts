@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getInventory, searchInventory, createMedicine } from './inventory.controller';
-import { requireAuth } from '../../middleware/auth.middleware';
+import { getInventory, searchInventory, createMedicine } from './inventory.controller.js';
+import { requireAuth } from '../../middleware/auth.middleware.js';
 
 const router = Router();
 router.use(requireAuth);

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { config } from '../core/config';
+import { config } from '../core/config.js';
 
 export interface AuthRequest extends Request {
   user?: {

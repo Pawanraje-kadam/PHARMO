@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { InventoryService } from './inventory.service';
-import { prisma } from '../../core/database';
-import { MedicineEnrichmentService } from '../medicine-ai/medicine-enrichment.service';
+import { InventoryService } from './inventory.service.js';
+import { prisma } from '../../core/database.js';
+import { MedicineEnrichmentService } from '../medicine-ai/medicine-enrichment.service.js';
 
 export const getInventory = async (_req: Request, res: Response) => {
   const data = await InventoryService.getAll();

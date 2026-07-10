@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../../core/database';
-import { config } from '../../core/config';
+import { prisma } from '../../core/database.js';
+import { config } from '../../core/config.js';
 
 export class AuthService {
   public static async authenticateUser(username: string, password_text: string) {

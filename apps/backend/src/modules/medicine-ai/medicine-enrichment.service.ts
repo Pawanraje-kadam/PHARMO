@@ -1,6 +1,6 @@
-import { prisma } from '../../core/database';
-import { VectorService } from '../semantic-search/vector.service';
-import { GroqService } from '../../core/groq.service';
+import { prisma } from '../../core/database.js';
+import { VectorService } from '../semantic-search/vector.service.js';
+import { GroqService } from '../../core/groq.service.js';
 
 export class MedicineEnrichmentService {
   public static async enrich(medicineId: string): Promise<void> {

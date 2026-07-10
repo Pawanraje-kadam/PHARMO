@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { SafetyService, PatientProfile } from '../safety-engine/safety.service';
-import { prisma } from '../../core/database';
+import { SafetyService, PatientProfile } from '../safety-engine/safety.service.js';
+import { prisma } from '../../core/database.js';
 
 export const analyzePatientSymptoms = async (req: Request, res: Response) => {
   try {

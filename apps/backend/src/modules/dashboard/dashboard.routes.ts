@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getSummaryMetrics, getAlertsRegistry } from './dashboard.controller';
-import { requireAuth } from '../../middleware/auth.middleware';
+import { getSummaryMetrics, getAlertsRegistry } from './dashboard.controller.js';
+import { requireAuth } from '../../middleware/auth.middleware.js';
 
 const router = Router();
 router.use(requireAuth);

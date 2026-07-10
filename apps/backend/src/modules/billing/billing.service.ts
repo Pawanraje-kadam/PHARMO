@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { prisma } from '../../core/database';
+import { prisma } from '../../core/database.js';
 
 export interface BillingItemInput {
   batch_id: string;

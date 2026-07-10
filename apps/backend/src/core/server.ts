@@ -1,15 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { errorHandler } from '../middleware/error.middleware';
+import { errorHandler } from '../middleware/error.middleware.js';
 
 // Routes imports
-import authRoutes from '../modules/auth/auth.routes';
-import billingRoutes from '../modules/billing/billing.routes';
-import dashboardRoutes from '../modules/dashboard/dashboard.routes';
-import inventoryRoutes from '../modules/inventory/inventory.routes';
-import salesRoutes from '../modules/sales/sales.routes';
-import aiAssistantRoutes from '../modules/medicine-ai/medicine-ai.routes';
+import authRoutes from '../modules/auth/auth.routes.js';
+import billingRoutes from '../modules/billing/billing.routes.js';
+import dashboardRoutes from '../modules/dashboard/dashboard.routes.js';
+import inventoryRoutes from '../modules/inventory/inventory.routes.js';
+import salesRoutes from '../modules/sales/sales.routes.js';
+import aiAssistantRoutes from '../modules/medicine-ai/medicine-ai.routes.js';
 
 const app = express();
 

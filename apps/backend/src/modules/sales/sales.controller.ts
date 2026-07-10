@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { SalesService } from './sales.service';
+import { SalesService } from './sales.service.js';
 
 export const getSalesHistory = async (req: Request, res: Response) => {
   try {

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { AuthService } from './auth.service';
-import { config } from '../../core/config';
+import { AuthService } from './auth.service.js';
+import { config } from '../../core/config.js';
 
 export const login = async (req: Request, res: Response) => {
   try {

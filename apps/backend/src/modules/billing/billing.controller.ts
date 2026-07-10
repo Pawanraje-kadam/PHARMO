@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { BillingService } from './billing.service';
-import { AuthRequest } from '../../middleware/auth.middleware';
+import { BillingService } from './billing.service.js';
+import { AuthRequest } from '../../middleware/auth.middleware.js';
 
 export const checkoutInvoice = async (req: AuthRequest, res: Response) => {
   try {

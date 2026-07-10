@@ -1,4 +1,4 @@
-import { prisma } from '../../core/database';
+import { prisma } from '../../core/database.js';
 
 export class SalesService {
   public static async getHistory(dateString?: string) {
