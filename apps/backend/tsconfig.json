@@ -5,7 +5,7 @@
     "moduleResolution": "Node16",
     "outDir": "./dist",
     "rootDir": "./src",
-    "types": ["node", "express", "cors", "cookie-parser", "jsonwebtoken", "bcrypt"],
+    "types": ["node"],
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
