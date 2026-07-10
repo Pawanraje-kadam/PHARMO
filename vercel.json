@@ -1,6 +1,3 @@
 {
-  "buildCommand": "npm run build --workspace=apps/frontend",
-  "outputDirectory": "apps/frontend/dist",
-  "framework": "vite",
-  "devCommand": "npm run dev --workspace=apps/frontend"
+  "framework": "vite"
 }
