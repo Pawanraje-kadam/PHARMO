@@ -12,6 +12,6 @@ export interface PatientSubmission {
 }
 
 export const analyzeSymptoms = async (payload: PatientSubmission) => {
-  const response = await api.post('/medicine-ai/analyze', payload);
+  const response = await api.post('/api/medicine-ai/analyze', payload);
   return response.data;
 };

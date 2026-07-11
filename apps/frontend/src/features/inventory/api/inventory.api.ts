@@ -9,11 +9,11 @@ export interface CreateMedicineInput {
 }
 
 export const getInventoryMedicines = async () => {
-  const response = await api.get('/inventory');
+  const response = await api.get('/api/inventory');
   return response.data;
 };
 
 export const createNewMedicine = async (payload: CreateMedicineInput) => {
-  const response = await api.post('/inventory', payload);
+  const response = await api.post('/api/inventory', payload);
   return response.data;
 };

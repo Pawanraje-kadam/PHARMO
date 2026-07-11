@@ -15,7 +15,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     const verifySession = async () => {
       if (isAuthenticated) return;
       try {
-        const response = await api.get('/auth/me');
+        const response = await api.get('/api/auth/me');
         if (response.data.success) {
           setAuth(response.data.data);
         } else {
