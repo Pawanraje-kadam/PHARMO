@@ -13,10 +13,12 @@ import aiAssistantRoutes from '../modules/medicine-ai/medicine-ai.routes.js';
 
 const app = express();
 
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173').split(',').map(s => s.trim());
+const envOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173').split(',').map(s => s.trim());
+const isVercelPreview = (origin: string): boolean =>
+  /^https?:\/\/[^/]+\.vercel\.app$/.test(origin);
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || origin === 'http://localhost:5173' || isVercelPreview(origin) || envOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
