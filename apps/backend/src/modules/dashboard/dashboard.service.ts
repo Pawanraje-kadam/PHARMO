@@ -5,13 +5,17 @@ export class DashboardService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const salesToday = await prisma.sale.findMany({
-      where: { created_at: { gte: today } }
-    });
+    const [salesAgg, totalMedicinesCount] = await Promise.all([
+      prisma.sale.aggregate({
+        where: { created_at: { gte: today } },
+        _sum: { total_amount: true },
+        _count: true
+      }),
+      prisma.medicine.count({ where: { is_deleted: false } })
+    ]);
 
-    const grossRevenue = salesToday.reduce((sum: number, s: any) => sum + Number(s.total_amount), 0);
-    const totalSalesCount = salesToday.length;
-    const totalMedicinesCount = await prisma.medicine.count({ where: { is_deleted: false } });
+    const grossRevenue = Number(salesAgg._sum.total_amount || 0);
+    const totalSalesCount = salesAgg._count;
 
     return { grossRevenue, totalSalesCount, totalMedicinesCount };
   }
@@ -22,13 +26,13 @@ export class DashboardService {
       include: { batches: true }
     });
 
-    const alerts = [];
+    const alerts: any[] = [];
     const criticalExpiryFence = new Date();
-    criticalExpiryFence.setMonth(criticalExpiryFence.getMonth() + 3); // 3 Months window threshold
+    criticalExpiryFence.setMonth(criticalExpiryFence.getMonth() + 3);
 
     for (const med of medicines) {
       const aggregateStock = med.batches.reduce((sum: number, b: any) => sum + b.quantity, 0);
-      
+
       if (aggregateStock === 0) {
         alerts.push({
           id: `out-${med.id}`,

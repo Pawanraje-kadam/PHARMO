@@ -20,7 +20,8 @@ export class SalesService {
         user: { select: { username: true } },
         items: { include: { batch: { include: { medicine: true } } } }
       },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
+      take: 200
     });
   }
 }

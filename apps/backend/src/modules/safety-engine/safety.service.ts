@@ -42,37 +42,55 @@ export class SafetyService {
     }
 
     for (const med of medicines) {
-      if (!med.ai_knowledge) continue;
-
       const knowledge = med.ai_knowledge;
       const warnings: string[] = [];
       let isSafe = true;
+      let matchScore = 0;
 
-      const totalStock = med.batches.reduce((sum: number, b: any) => sum + (new Date(b.expiry_date) > new Date() ? b.quantity : 0), 0);
+      const totalStock = med.batches.reduce((sum: number, b: any) => {
+        if (new Date(b.expiry_date) > new Date()) {
+          return sum + b.quantity;
+        }
+        return sum;
+      }, 0);
       if (totalStock <= 0) continue;
 
-      const semanticScore = VectorService.cosineSimilarity(patientEmbedding, knowledge.embedding_vector);
-      let matchScore = Math.round(((semanticScore + 1) / 2) * 100);
+      if (knowledge) {
+        const semanticScore = VectorService.cosineSimilarity(patientEmbedding, knowledge.embedding_vector);
+        matchScore = Math.round(((semanticScore + 1) / 2) * 100);
 
-      const hasAllergyConflict = patient.known_allergies.some(a => 
-        knowledge.generic_ingredient.toUpperCase().includes(a.toUpperCase()) || med.name.toUpperCase().includes(a.toUpperCase())
-      );
-      if (hasAllergyConflict) {
-        isSafe = false;
-        warnings.push('CRITICAL: Matches a recorded patient drug allergy.');
-      }
+        const hasAllergyConflict = patient.known_allergies.some(a =>
+          knowledge.generic_ingredient.toUpperCase().includes(a.toUpperCase()) || med.name.toUpperCase().includes(a.toUpperCase())
+        );
+        if (hasAllergyConflict) {
+          isSafe = false;
+          warnings.push('CRITICAL: Matches a recorded patient drug allergy.');
+        }
 
-      if (patient.pregnant && (knowledge.pregnancy_warnings.toUpperCase().includes('AVOID') || knowledge.pregnancy_warnings.toUpperCase().includes('CONTRAINDICATED'))) {
-        isSafe = false;
-        warnings.push('CRITICAL: Contraindicated during pregnancy.');
+        if (patient.pregnant && (knowledge.pregnancy_warnings.toUpperCase().includes('AVOID') || knowledge.pregnancy_warnings.toUpperCase().includes('CONTRAINDICATED'))) {
+          isSafe = false;
+          warnings.push('CRITICAL: Contraindicated during pregnancy.');
+        }
+      } else {
+        matchScore = 30;
+
+        const hasAllergyConflict = patient.known_allergies.some(a =>
+          med.name.toUpperCase().includes(a.toUpperCase()) || (med.generic_name && med.generic_name.toUpperCase().includes(a.toUpperCase()))
+        );
+        if (hasAllergyConflict) {
+          isSafe = false;
+          warnings.push('CRITICAL: Name matches a recorded patient drug allergy.');
+        }
       }
 
       if (groqAnalysis) {
+        if (groqAnalysis.recommendedMedicines.some((rec: string) => med.name.toLowerCase().includes(rec.toLowerCase()))) {
+          matchScore = Math.min(100, matchScore + 25);
+        } else if (groqAnalysis.recommendedMedicines.length > 0) {
+          matchScore = Math.max(10, matchScore - 15);
+        }
         if (groqAnalysis.warnings.some((w: string) => med.name.toLowerCase().includes(w.toLowerCase().split(' ')[0]?.toLowerCase() || ''))) {
           isSafe = false;
-        }
-        if (!groqAnalysis.recommendedMedicines.includes(med.name)) {
-          matchScore = Math.max(10, matchScore - 20);
         }
       }
 
@@ -87,11 +105,11 @@ export class SafetyService {
         warnings,
         groq_analysis: groqAnalysis ? { analysis: groqAnalysis.analysis, explanation: groqAnalysis.explanation } : null,
         details: {
-          therapeutic_category: knowledge.therapeutic_category,
-          adult_dosage: knowledge.adult_dosage,
-          pediatric_dosage: knowledge.pediatric_dosage,
-          is_otc: knowledge.is_otc,
-          important_warnings: knowledge.important_warnings
+          therapeutic_category: knowledge?.therapeutic_category || 'Unclassified',
+          adult_dosage: knowledge?.adult_dosage || 'Consult physician for dosage.',
+          pediatric_dosage: knowledge?.pediatric_dosage || null,
+          is_otc: knowledge?.is_otc ?? true,
+          important_warnings: knowledge?.important_warnings || 'Consult a healthcare professional before use.'
         },
         inventory: { stock_available: totalStock, batch_number: med.batches[0]?.batch_number || 'N/A' }
       });

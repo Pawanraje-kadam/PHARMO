@@ -43,14 +43,15 @@ export class MedicineEnrichmentService {
         create: { medicine_id: medicineId, ...clinicalSpecs, embedding_vector: embedding, enrichment_status: 'COMPLETED' }
       });
     } catch (error: any) {
+      const fallbackEmbedding = await VectorService.generateEmbedding(medicine.name);
       await prisma.medicineKnowledge.upsert({
         where: { medicine_id: medicineId },
-        update: { enrichment_status: 'FAILED', failure_log: error.message },
+        update: { enrichment_status: 'FAILED', failure_log: error.message, embedding_vector: fallbackEmbedding },
         create: {
           medicine_id: medicineId, generic_ingredient: medicine.generic_name || 'Pending',
           therapeutic_category: 'Pending', drug_class: 'Pending', common_uses: [],
           adult_dosage: 'Pending', pregnancy_warnings: 'Pending', breastfeeding_warnings: 'Pending',
-          important_warnings: 'Pending', embedding_vector: [], enrichment_status: 'FAILED', failure_log: error.message
+          important_warnings: 'Pending', embedding_vector: fallbackEmbedding, enrichment_status: 'FAILED', failure_log: error.message
         }
       });
     }

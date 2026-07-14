@@ -12,12 +12,16 @@ export const api = axios.create({
 });
 
 // Global Interceptor pipeline to catch session expiration immediately
+// Exclude /api/auth/login from redirect to preserve error messages
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // If unauthorized, clean local memory hooks and force programmatic redirect
-      window.location.href = '/login';
+      const requestUrl = error.config?.url || '';
+      const isLoginRequest = requestUrl.includes('/api/auth/login');
+      if (!isLoginRequest) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
