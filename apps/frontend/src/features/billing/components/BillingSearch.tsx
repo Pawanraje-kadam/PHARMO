@@ -58,7 +58,7 @@ export const BillingSearch: React.FC<BillingSearchProps> = ({ onSelectItem }) =>
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-bold text-blue-600 text-sm">${Number(batch.selling_price).toFixed(2)}</p>
+                <p className="font-bold text-blue-600 text-sm">₹{Number(batch.selling_price).toFixed(2)}</p>
                 <p className={`font-semibold ${batch.quantity <= 10 ? 'text-amber-600' : 'text-slate-400'}`}>
                   Stock: {batch.quantity} units
                 </p>

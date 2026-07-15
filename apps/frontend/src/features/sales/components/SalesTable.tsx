@@ -34,7 +34,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
                 {new Date(sale.created_at).toLocaleString()}
               </td>
               <td className="p-4 font-extrabold text-slate-900">
-                ${Number(sale.total_amount).toFixed(2)}
+                ₹{Number(sale.total_amount).toFixed(2)}
               </td>
               <td className="p-4">
                 <button
@@ -61,8 +61,8 @@ export const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
                             <p className="text-slate-400 font-medium">Batch Num: {item.batch?.batch_number || 'N/A'}</p>
                           </div>
                           <div className="text-right font-medium text-slate-600">
-                            <span>{item.quantity} units x ${Number(item.unit_price).toFixed(2)}</span>
-                            <p className="font-bold text-slate-900">${Number(item.subtotal).toFixed(2)}</p>
+                            <span>{item.quantity} units x ₹{Number(item.unit_price).toFixed(2)}</span>
+                            <p className="font-bold text-slate-900">₹{Number(item.subtotal).toFixed(2)}</p>
                           </div>
                         </div>
                       ))}

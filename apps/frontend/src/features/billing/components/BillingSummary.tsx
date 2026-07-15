@@ -18,7 +18,7 @@ export const BillingSummary: React.FC<BillingSummaryProps> = ({ total, itemCount
         </div>
         <div className="flex justify-between border-t border-slate-800 pt-2 text-base font-bold text-slate-300">
           <span>Amount Payable</span>
-          <span className="text-emerald-400 text-xl font-extrabold">${total.toFixed(2)}</span>
+          <span className="text-emerald-400 text-xl font-extrabold">₹{total.toFixed(2)}</span>
         </div>
       </div>
 

@@ -140,8 +140,8 @@ export const BatchManager: React.FC<BatchManagerProps> = ({ medicine, onStockUpd
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Input label="Batch Number *" value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="e.g., BT-2024-001" disabled={!!editingBatch} required />
             <Input label="Quantity (Units) *" type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
-            <Input label="Buying Price ($) *" type="number" step="0.01" min="0" value={buyingPrice} onChange={(e) => setBuyingPrice(e.target.value)} required />
-            <Input label="Selling Price ($) *" type="number" step="0.01" min="0" value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} required />
+            <Input label="Buying Price (₹) *" type="number" step="0.01" min="0" value={buyingPrice} onChange={(e) => setBuyingPrice(e.target.value)} required />
+            <Input label="Selling Price (₹) *" type="number" step="0.01" min="0" value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} required />
             <Input label="Expiry Date *" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} required />
           </div>
           <div className="flex gap-2">
@@ -185,8 +185,8 @@ export const BatchManager: React.FC<BatchManagerProps> = ({ medicine, onStockUpd
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-xs text-slate-500 font-medium">
                       <span>Qty: <span className={`font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}`}>{batch.quantity}</span></span>
-                      <span>Buy: ${Number(batch.buying_price).toFixed(2)}</span>
-                      <span>Sell: ${Number(batch.selling_price).toFixed(2)}</span>
+                      <span>Buy: ₹{Number(batch.buying_price).toFixed(2)}</span>
+                      <span>Sell: ₹{Number(batch.selling_price).toFixed(2)}</span>
                       <span>Exp: {new Date(batch.expiry_date).toLocaleDateString()}</span>
                     </div>
                   </div>

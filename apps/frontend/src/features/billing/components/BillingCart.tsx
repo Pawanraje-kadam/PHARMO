@@ -31,7 +31,7 @@ export const BillingCart: React.FC<BillingCartProps> = ({ cart, onUpdateQty, onR
         <div key={item.id} className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-4 shadow-sm">
           <div className="min-w-0 flex-1">
             <h4 className="font-bold text-sm text-slate-800 truncate">{item.name}</h4>
-            <p className="text-[11px] text-slate-400 font-medium">Batch: {item.batch_number} • ${item.selling_price.toFixed(2)}/unit</p>
+            <p className="text-[11px] text-slate-400 font-medium">Batch: {item.batch_number} • ₹{item.selling_price.toFixed(2)}/unit</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -53,7 +53,7 @@ export const BillingCart: React.FC<BillingCartProps> = ({ cart, onUpdateQty, onR
           </div>
 
           <div className="text-right min-w-[70px]">
-            <p className="text-sm font-bold text-slate-800">${(item.selling_price * item.quantity).toFixed(2)}</p>
+            <p className="text-sm font-bold text-slate-800">₹{(item.selling_price * item.quantity).toFixed(2)}</p>
             <button
               type="button"
               onClick={() => onRemoveItem(item.id)}
