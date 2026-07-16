@@ -22,6 +22,8 @@ export interface CreateBatchInput {
   buying_price: number;
   selling_price: number;
   expiry_date: string;
+  purchase_unit?: string;
+  units_per_tablet?: number;
 }
 
 export interface UpdateBatchInput {
@@ -29,6 +31,8 @@ export interface UpdateBatchInput {
   buying_price?: number;
   selling_price?: number;
   expiry_date?: string;
+  purchase_unit?: string;
+  units_per_tablet?: number;
 }
 
 export const getInventoryMedicines = async () => {

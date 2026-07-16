@@ -81,9 +81,13 @@ export const deleteMedicine = async (req: Request, res: Response): Promise<void>
 
 export const createBatch = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { batch_number, quantity, buying_price, selling_price, expiry_date } = req.body;
-    if (!batch_number || quantity == null || !buying_price || !selling_price || !expiry_date) {
+    const { batch_number, quantity, buying_price, selling_price, expiry_date, purchase_unit, units_per_tablet } = req.body;
+    if (!batch_number || quantity == null || buying_price == null || selling_price == null || !expiry_date) {
       res.status(400).json({ success: false, data: null, error: 'batch_number, quantity, buying_price, selling_price, and expiry_date are required.' }); return;
+    }
+
+    if (Number(quantity) < 1) {
+      res.status(400).json({ success: false, data: null, error: 'Quantity must be at least 1.' }); return;
     }
 
     const medicine = await prisma.medicine.findUnique({ where: { id: req.params.id, is_deleted: false } });
@@ -91,7 +95,9 @@ export const createBatch = async (req: Request, res: Response): Promise<void> =>
 
     const batch = await InventoryService.addBatch(req.params.id, {
       batch_number, quantity: Number(quantity), buying_price: Number(buying_price),
-      selling_price: Number(selling_price), expiry_date
+      selling_price: Number(selling_price), expiry_date,
+      purchase_unit: purchase_unit || 'tablet',
+      units_per_tablet: units_per_tablet != null ? Number(units_per_tablet) : 1
     });
     res.status(201).json({ success: true, data: batch, error: null });
   } catch (error: any) {
@@ -104,12 +110,17 @@ export const createBatch = async (req: Request, res: Response): Promise<void> =>
 
 export const updateBatch = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { quantity, buying_price, selling_price, expiry_date } = req.body;
+    const { quantity, buying_price, selling_price, expiry_date, purchase_unit, units_per_tablet } = req.body;
+    if (quantity != null && Number(quantity) < 0) {
+      res.status(400).json({ success: false, data: null, error: 'Quantity cannot be negative.' }); return;
+    }
     const data = await InventoryService.updateBatch(req.params.batchId, {
       quantity: quantity != null ? Number(quantity) : undefined,
       buying_price: buying_price != null ? Number(buying_price) : undefined,
       selling_price: selling_price != null ? Number(selling_price) : undefined,
-      expiry_date: expiry_date || undefined
+      expiry_date: expiry_date || undefined,
+      purchase_unit: purchase_unit || undefined,
+      units_per_tablet: units_per_tablet != null ? Number(units_per_tablet) : undefined
     });
     res.json({ success: true, data, error: null });
   } catch (error: any) {

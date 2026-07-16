@@ -6,6 +6,8 @@ export interface BatchInput {
   buying_price: number;
   selling_price: number;
   expiry_date: string;
+  purchase_unit?: string;
+  units_per_tablet?: number;
 }
 
 export class InventoryService {
@@ -68,7 +70,9 @@ export class InventoryService {
         quantity: data.quantity,
         buying_price: data.buying_price,
         selling_price: data.selling_price,
-        expiry_date: new Date(data.expiry_date)
+        expiry_date: new Date(data.expiry_date),
+        purchase_unit: data.purchase_unit || 'tablet',
+        units_per_tablet: data.units_per_tablet ?? 1
       },
       include: { medicine: true }
     });
@@ -80,6 +84,8 @@ export class InventoryService {
     if (data.buying_price != null) updateData.buying_price = data.buying_price;
     if (data.selling_price != null) updateData.selling_price = data.selling_price;
     if (data.expiry_date) updateData.expiry_date = new Date(data.expiry_date);
+    if (data.purchase_unit != null) updateData.purchase_unit = data.purchase_unit;
+    if (data.units_per_tablet != null) updateData.units_per_tablet = data.units_per_tablet;
     return await prisma.batch.update({
       where: { id },
       data: updateData

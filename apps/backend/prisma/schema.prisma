@@ -40,16 +40,18 @@ model Medicine {
 }
 
 model Batch {
-  id            String     @id @default(uuid())
-  medicine_id   String
-  batch_number  String
-  quantity      Int
-  buying_price  Decimal    @db.Decimal(10, 2)
-  selling_price Decimal    @db.Decimal(10, 2)
-  expiry_date   DateTime
-  created_at    DateTime   @default(now())
-  medicine      Medicine   @relation(fields: [medicine_id], references: [id], onDelete: Cascade)
-  sale_items    SaleItem[]
+  id               String     @id @default(uuid())
+  medicine_id      String
+  batch_number     String
+  quantity         Int
+  buying_price     Decimal    @db.Decimal(10, 2)
+  selling_price    Decimal    @db.Decimal(10, 2)
+  expiry_date      DateTime
+  purchase_unit    String     @default("tablet")
+  units_per_tablet Float      @default(1)
+  created_at       DateTime   @default(now())
+  medicine         Medicine   @relation(fields: [medicine_id], references: [id], onDelete: Cascade)
+  sale_items       SaleItem[]
 
   @@unique([medicine_id, batch_number])
   @@map("batches")

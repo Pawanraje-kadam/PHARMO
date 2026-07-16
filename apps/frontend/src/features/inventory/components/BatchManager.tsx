@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getBatchesByMedicine, createBatch, updateBatch, deleteBatch } from '../api/inventory.api';
 import { Input } from '../../../shared/ui/Input';
 import { Button } from '../../../shared/ui/Button';
 import { Badge } from '../../../shared/ui/Badge';
-import { X, Plus, Trash2, Edit2, Package } from 'lucide-react';
+import { X, Plus, Trash2, Edit2, Package, Calculator, TrendingUp } from 'lucide-react';
 
 interface BatchManagerProps {
   medicine: any;
   onStockUpdated: () => void;
   onClose: () => void;
 }
+
+type PurchaseUnit = 'tablet' | 'strip' | 'box';
+type PurchaseMode = 'total' | 'per_tablet';
 
 export const BatchManager: React.FC<BatchManagerProps> = ({ medicine, onStockUpdated, onClose }) => {
   const [batches, setBatches] = useState<any[]>([]);
@@ -18,8 +21,11 @@ export const BatchManager: React.FC<BatchManagerProps> = ({ medicine, onStockUpd
   const [editingBatch, setEditingBatch] = useState<any>(null);
 
   const [batchNumber, setBatchNumber] = useState('');
+  const [purchaseUnit, setPurchaseUnit] = useState<PurchaseUnit>('tablet');
+  const [unitsPerTablet, setUnitsPerTablet] = useState('1');
   const [quantity, setQuantity] = useState('');
-  const [buyingPrice, setBuyingPrice] = useState('');
+  const [purchaseMode, setPurchaseMode] = useState<PurchaseMode>('per_tablet');
+  const [purchasePrice, setPurchasePrice] = useState('');
   const [sellingPrice, setSellingPrice] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -40,8 +46,44 @@ export const BatchManager: React.FC<BatchManagerProps> = ({ medicine, onStockUpd
 
   const totalStock = batches.reduce((sum: number, b: any) => sum + b.quantity, 0);
 
+  const conversionFactor = useMemo(() => {
+    if (purchaseUnit === 'tablet') return 1;
+    const val = Number(unitsPerTablet);
+    return val > 0 ? val : 1;
+  }, [purchaseUnit, unitsPerTablet]);
+
+  const computed = useMemo(() => {
+    const qty = Number(quantity) || 0;
+    const price = Number(purchasePrice) || 0;
+    const sell = Number(sellingPrice) || 0;
+    const totalTablets = qty * conversionFactor;
+    let costPerTablet = 0;
+    let totalPurchasePrice = 0;
+
+    if (purchaseMode === 'total') {
+      totalPurchasePrice = price;
+      costPerTablet = totalTablets > 0 ? price / totalTablets : 0;
+    } else {
+      costPerTablet = price;
+      totalPurchasePrice = price * totalTablets;
+    }
+
+    const expectedRevenue = totalTablets * sell;
+    const expectedProfit = expectedRevenue - totalPurchasePrice;
+    const profitMargin = expectedRevenue > 0 ? (expectedProfit / expectedRevenue) * 100 : 0;
+
+    return { totalTablets, costPerTablet, totalPurchasePrice, expectedRevenue, expectedProfit, profitMargin };
+  }, [quantity, purchasePrice, sellingPrice, purchaseMode, conversionFactor]);
+
   const resetForm = () => {
-    setBatchNumber(''); setQuantity(''); setBuyingPrice(''); setSellingPrice(''); setExpiryDate('');
+    setBatchNumber('');
+    setPurchaseUnit('tablet');
+    setUnitsPerTablet('1');
+    setQuantity('');
+    setPurchaseMode('per_tablet');
+    setPurchasePrice('');
+    setSellingPrice('');
+    setExpiryDate('');
     setEditingBatch(null);
     setShowAddForm(false);
   };
@@ -49,32 +91,51 @@ export const BatchManager: React.FC<BatchManagerProps> = ({ medicine, onStockUpd
   const handleEditBatch = (batch: any) => {
     setEditingBatch(batch);
     setBatchNumber(batch.batch_number);
-    setQuantity(String(batch.quantity));
-    setBuyingPrice(String(batch.buying_price));
-    setSellingPrice(String(batch.selling_price));
+
+    const unit: PurchaseUnit = batch.purchase_unit || 'tablet';
+    const factor = batch.units_per_tablet || 1;
+    setPurchaseUnit(unit);
+    setUnitsPerTablet(String(factor));
+
+    const internalQty = batch.quantity;
+    const displayQty = unit === 'tablet' ? internalQty : internalQty / factor;
+    setQuantity(String(displayQty));
+
+    setPurchaseMode('per_tablet');
+    setPurchasePrice(String(Number(batch.buying_price)));
+    setSellingPrice(String(Number(batch.selling_price)));
     setExpiryDate(new Date(batch.expiry_date).toISOString().split('T')[0]);
     setShowAddForm(true);
   };
 
   const handleSubmitBatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!batchNumber.trim() || !quantity || !buyingPrice || !sellingPrice || !expiryDate) return;
+    if (!batchNumber.trim() || !quantity || !purchasePrice || !sellingPrice || !expiryDate) return;
+    if (Number(quantity) <= 0 || Number(purchasePrice) <= 0 || Number(sellingPrice) <= 0) return;
+
     setSubmitting(true);
     try {
+      const tabletQuantity = computed.totalTablets;
+      const costPerTablet = computed.costPerTablet;
+
       if (editingBatch) {
         await updateBatch(editingBatch.id, {
-          quantity: Number(quantity),
-          buying_price: Number(buyingPrice),
+          quantity: tabletQuantity,
+          buying_price: costPerTablet,
           selling_price: Number(sellingPrice),
-          expiry_date: expiryDate
+          expiry_date: expiryDate,
+          purchase_unit: purchaseUnit,
+          units_per_tablet: conversionFactor
         });
       } else {
         await createBatch(medicine.id, {
           batch_number: batchNumber.trim(),
-          quantity: Number(quantity),
-          buying_price: Number(buyingPrice),
+          quantity: tabletQuantity,
+          buying_price: costPerTablet,
           selling_price: Number(sellingPrice),
-          expiry_date: expiryDate
+          expiry_date: expiryDate,
+          purchase_unit: purchaseUnit,
+          units_per_tablet: conversionFactor
         });
       }
       resetForm();
@@ -98,6 +159,8 @@ export const BatchManager: React.FC<BatchManagerProps> = ({ medicine, onStockUpd
     }
   };
 
+  const fmt = (n: number) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="flex items-center justify-between p-5 border-b border-slate-200 bg-slate-50">
@@ -111,7 +174,7 @@ export const BatchManager: React.FC<BatchManagerProps> = ({ medicine, onStockUpd
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
               Total Stock: <span className={`font-bold ${totalStock === 0 ? 'text-red-600' : totalStock <= medicine.min_stock_level ? 'text-amber-600' : 'text-emerald-600'}`}>
-                {totalStock} units
+                {totalStock} tablets
               </span>
               {' • '}Min Level: {medicine.min_stock_level} | Generic: {medicine.generic_name || 'N/A'}
             </p>
@@ -137,13 +200,142 @@ export const BatchManager: React.FC<BatchManagerProps> = ({ medicine, onStockUpd
             </h4>
             <button type="button" onClick={resetForm} className="text-xs font-semibold text-slate-400 hover:text-slate-600 uppercase">Cancel</button>
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Input label="Batch Number *" value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="e.g., BT-2024-001" disabled={!!editingBatch} required />
-            <Input label="Quantity (Units) *" type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
-            <Input label="Buying Price (₹) *" type="number" step="0.01" min="0" value={buyingPrice} onChange={(e) => setBuyingPrice(e.target.value)} required />
-            <Input label="Selling Price (₹) *" type="number" step="0.01" min="0" value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} required />
             <Input label="Expiry Date *" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} required />
+            <div className="space-y-1.5 w-full">
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">Purchase Unit</label>
+              <select
+                value={purchaseUnit}
+                onChange={(e) => {
+                  const val = e.target.value as PurchaseUnit;
+                  setPurchaseUnit(val);
+                  if (val === 'tablet') setUnitsPerTablet('1');
+                }}
+                className="w-full p-2.5 border rounded-lg text-sm outline-none transition bg-white border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="tablet">Tablet</option>
+                <option value="strip">Strip</option>
+                <option value="box">Box</option>
+              </select>
+            </div>
           </div>
+
+          {purchaseUnit !== 'tablet' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <Input
+                label={`Units per ${purchaseUnit === 'strip' ? 'Strip' : 'Box'} *`}
+                type="number"
+                min="1"
+                step="1"
+                value={unitsPerTablet}
+                onChange={(e) => setUnitsPerTablet(e.target.value)}
+                required
+              />
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Input
+              label={`Quantity (${purchaseUnit === 'tablet' ? 'Tablets' : purchaseUnit === 'strip' ? 'Strips' : 'Boxes'}) *`}
+              type="number"
+              min="1"
+              step="1"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              required
+            />
+            <div className="space-y-1.5 w-full">
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">Purchase Price Mode</label>
+              <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setPurchaseMode('per_tablet')}
+                  className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition ${
+                    purchaseMode === 'per_tablet'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Price / Tablet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPurchaseMode('total')}
+                  className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition ${
+                    purchaseMode === 'total'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Total Price
+                </button>
+              </div>
+            </div>
+            <Input
+              label={purchaseMode === 'per_tablet' ? 'Price Per Tablet (₹) *' : 'Total Purchase Price (₹) *'}
+              type="number"
+              step="0.01"
+              min="0"
+              value={purchasePrice}
+              onChange={(e) => setPurchasePrice(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Input
+              label="Selling Price Per Tablet (₹) *"
+              type="number"
+              step="0.01"
+              min="0"
+              value={sellingPrice}
+              onChange={(e) => setSellingPrice(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calculator className="w-4 h-4 text-blue-600" />
+              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-600">Purchase Summary</h5>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase">Total Tablets</p>
+                <p className="text-sm font-bold text-slate-800">{computed.totalTablets.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase">Cost Per Tablet</p>
+                <p className="text-sm font-bold text-slate-800">₹{fmt(computed.costPerTablet)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase">Total Purchase Price</p>
+                <p className="text-sm font-bold text-slate-800">₹{fmt(computed.totalPurchasePrice)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase">Expected Revenue</p>
+                <p className="text-sm font-bold text-emerald-700">₹{fmt(computed.expectedRevenue)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase">Expected Profit</p>
+                <p className={`text-sm font-bold ${computed.expectedProfit >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                  ₹{fmt(computed.expectedProfit)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase">Profit Margin</p>
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3 text-slate-400" />
+                  <p className={`text-sm font-bold ${computed.profitMargin >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                    {fmt(computed.profitMargin)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <Button type="submit" isLoading={submitting} className="text-xs uppercase tracking-wider py-2">
               {editingBatch ? 'Update Batch' : 'Create Batch'}
@@ -172,6 +364,9 @@ export const BatchManager: React.FC<BatchManagerProps> = ({ medicine, onStockUpd
             {batches.map((batch: any) => {
               const isExpired = new Date(batch.expiry_date) <= new Date();
               const isLow = batch.quantity <= 0;
+              const unit: PurchaseUnit = batch.purchase_unit || 'tablet';
+              const factor = batch.units_per_tablet || 1;
+              const displayQty = unit === 'tablet' ? batch.quantity : batch.quantity / factor;
 
               return (
                 <div key={batch.id} className={`flex items-center justify-between p-3 rounded-xl border transition ${
@@ -182,11 +377,14 @@ export const BatchManager: React.FC<BatchManagerProps> = ({ medicine, onStockUpd
                       <span className="font-mono font-bold text-xs text-slate-700">{batch.batch_number}</span>
                       {isExpired && <Badge variant="danger">Expired</Badge>}
                       {isLow && !isExpired && <Badge variant="warning">Empty</Badge>}
+                      {unit !== 'tablet' && (
+                        <Badge variant="info">{displayQty} {unit === 'strip' ? 'Strips' : 'Boxes'} ({batch.quantity} tabs)</Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-xs text-slate-500 font-medium">
-                      <span>Qty: <span className={`font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}`}>{batch.quantity}</span></span>
-                      <span>Buy: ₹{Number(batch.buying_price).toFixed(2)}</span>
-                      <span>Sell: ₹{Number(batch.selling_price).toFixed(2)}</span>
+                      <span>Qty: <span className={`font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}`}>{batch.quantity} tablets</span></span>
+                      <span>Buy: ₹{Number(batch.buying_price).toFixed(2)}/tab</span>
+                      <span>Sell: ₹{Number(batch.selling_price).toFixed(2)}/tab</span>
                       <span>Exp: {new Date(batch.expiry_date).toLocaleDateString()}</span>
                     </div>
                   </div>

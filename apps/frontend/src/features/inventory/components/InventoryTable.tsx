@@ -43,7 +43,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
             <td className="p-4 text-xs font-mono font-bold text-slate-700">
               {med.rack_location ? `${med.rack_location}` : 'Unassigned'}
             </td>
-            <td className="p-4 font-bold text-slate-800">{totalStock} units</td>
+            <td className="p-4 font-bold text-slate-800">{totalStock} tablets</td>
             <td className="p-4">
               <Badge variant={totalStock === 0 ? 'danger' : isLowStock ? 'warning' : 'success'}>
                 {totalStock === 0 ? 'Out of Stock' : isLowStock ? 'Low Stock' : 'In Stock'}
